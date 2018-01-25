@@ -1,0 +1,164 @@
+<div class="row">
+  <div class="col-lg-12">
+    <div class="row">
+      <div class="col-lg-12 text-right">
+        <button pButton icon="fa-download" label="Image" class="ui-button-info" (click)="rasterize();"></button>
+        <button pButton icon="fa-save" label="Save" class="ui-button-info" (click)="saveCanvasToJSON();"></button>
+        <button pButton icon="fa-save" label="Load" class="ui-button-info" (click)="loadCanvasFromJSON();"></button>
+        <button pButton icon="fa-ban" label="Clear" class="ui-button-info" (click)="confirmClear();"></button>
+      </div>
+    </div>
+  </div>
+</div>
+<hr class="top-hr"/>
+<div class="row">
+  <div class="col-lg-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">Figure</div>
+      <div class="panel-body text-center no-padding">
+        <div class="ui-g-6">
+          <button pButton icon="fa-square" label="Rectangle" class="ui-button-info btn-figure" (click)="addFigure('rectangle');"></button>
+        </div>
+        <div class="ui-g-6">
+          <button pButton icon="fa-square" label="Square" class="ui-button-info btn-figure" (click)="addFigure('square');"></button>
+        </div>
+        <div class="ui-g-6">
+          <button pButton icon="fa-exclamation-triangle" label="Triangle" class="ui-button-info btn-figure" (click)="addFigure('triangle');"></button>
+        </div>
+        <div class="ui-g-6">
+          <button pButton icon="fa-circle" label="Circle" class="ui-button-info btn-figure" (click)="addFigure('circle');"></button>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Text</div>
+      <div class="panel-body">
+        <div class="ui-inputgroup">
+          <input type="text" pInputText placeholder="Input text..." [(ngModel)]="textString" />
+          <button pButton icon="fa-plus" (click)="addText()" [disabled]="textString == null || textString.length === 0"></button>
+        </div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">Arrow</div>
+      <div class="panel-body">
+        <img class="images-item" (click)="getImgPolaroid($event)" src="assets/img/arrow-forward.svg">
+        <img class="images-item" (click)="getImgPolaroid($event)" src="assets/img/arrow-right.svg">
+        <img class="images-item" (click)="getImgPolaroid($event)" src="assets/img/arrow-up.svg">
+        <img class="images-item" (click)="getImgPolaroid($event)" src="assets/img/arrow-yellow.svg">
+      </div>
+    </div>
+    <div class="panel panel-default">
+        <div class="panel-heading">Free Drawing</div>
+        <div class="panel-body">
+        <div class="ui-g-6">
+          <button pButton icon="fa-skyatlas" label="Free line" class="ui-button-info btn-free-drawing" (click)="setFreeDrawingMode()"></button>
+        </div>
+        <div class="ui-g-6">
+          <button pButton icon="fa-eraser" label="Eraser" class="ui-button-info btn-free-drawing" (click)="setEraserMode()"></button>
+        </div>
+        </div>
+      </div>
+  </div>
+
+  <div class="col-lg-6 canvas-wrapper">
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <div class="col-lg-3">
+    <div class="panel panel-default">
+      <div class="panel-heading">Options</div>
+      <div class="panel-body text-center">
+          <button pButton icon="fa-trash" label="Delete" [disabled]="!selected" (click)="removeSelected($event)"></button>
+          <button pButton icon="fa-clone" label="Clone" [disabled]="!selected || selected.type == 'group'" (click)="clone($event)"></button>
+      </div>
+    </div>
+
+    <div class="panel panel-default" *ngIf="!selected">
+      <div class="panel-heading">Canvas</div>
+      <div class="panel-body">
+        <input type="button" class="form-control" [cpPosition]="'bottom'" [(colorPicker)]="props.canvasFill" (colorPickerChange)="setCanvasFill()" value="Background Color"/>
+      </div>
+    </div>
+
+    <div class="panel panel-default">
+      <div class="panel-heading">Custom</div>
+      <div class="panel-body">
+        <div class="custom-item" *ngIf="selected  && selected.type == 'group'">
+          Group Selected
+        </div>
+        <div class="custom-item" *ngIf="!selected">
+          No items selected
+        </div>
+        <div class="custom-item" *ngIf="selected && selected.type != 'group'">
+          <div class="custom-item-title">Opacity</div>
+          <div class="custom-item-body">
+            <p-slider [(ngModel)]="props.opacity" (onChange)="setOpacity()"></p-slider> {{props.opacity}}
+          </div>
+        </div>
+        <div class="custom-item" *ngIf="selected && textEditor || selected && figureEditor">
+          <input type="button" class="form-control" [cpPosition]="'bottom'" [(colorPicker)]="props.fill" (colorPickerChange)="setFill()" value="Fill" />
+        </div>
+        <div class="custom-item" *ngIf="freeLineEditor">
+          <input type="button" class="form-control" [cpPosition]="'bottom'" [(colorPicker)]="props.strokeColor" (colorPickerChange)="setStrokeColor()" value="Fill" />
+        </div>
+        <div class="custom-item" *ngIf="freeLineEditor || eraserEditor">
+            <p-slider [(ngModel)]="props.strokeWidth" (onChange)="setStrokeWidth()" [step]="1" [min]="1" [max]="50"></p-slider> {{props.strokeWidth}}
+          </div>
+
+        <div class="custom-item" *ngIf="selected && textEditor">
+          <div class="custom-item-title">Font family</div>
+          <div class="custom-item-body">
+            <p-dropdown [options]="fontList" [(ngModel)]="selectedFontFamilyItem" optionLabel="value" (onChange)="setFontFamily()"></p-dropdown>
+          </div>
+        </div>
+
+        <div class="custom-item" *ngIf="selected && textEditor">
+          <div class="custom-item-title">Text Align</div>
+          <div class="custom-item-body text-center">
+            <div class="btn-group" role="group" aria-label="...">
+              <button pButton icon="fa-align-left" [ngClass]="{'active': props.textAlign == 'left' }" (click)="setTextAlign('left')"></button>
+              <button pButton icon="fa-align-center" [ngClass]="{'active': props.textAlign == 'center' }" (click)="setTextAlign('center')"></button>
+              <button pButton icon="fa-align-right" [ngClass]="{'active': props.textAlign == 'right' }" (click)="setTextAlign('right')"></button>
+              <button pButton icon="fa-align-justify" [ngClass]="{'active': props.textAlign == 'justify' }" (click)="setTextAlign('justify')"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="custom-item" *ngIf="selected && textEditor">
+          <div class="custom-item-title">Style</div>
+          <div class="custom-item-body text-center">
+            <div class="btn-group" role="group" aria-label="...">
+              <button pButton icon="fa-bold" [ngClass]="{'active': props.fontWeight }" (click)="setBold()"></button>
+              <button pButton icon="fa-italic" [ngClass]="{'active': props.fontStyle }" (click)="setFontStyle()"></button>
+              <button pButton icon="fa-underline" [ngClass]="{'active': hasTextDecoration('underline') }" (click)="setTextDecoration('underline')"></button>
+              <button pButton icon="fa-underline fa-flip-vertical" [ngClass]="{'active': hasTextDecoration('overline') }" (click)="setTextDecoration('overline')"></button>
+              <button pButton icon="fa-strikethrough" [ngClass]="{'active': hasTextDecoration('line-through') }" (click)="setTextDecoration('line-through')"></button>
+            </div>
+          </div>
+        </div>
+        <div class="custom-item" *ngIf="selected && textEditor">
+          <div class="custom-item-title">Font Size</div>
+          <div class="custom-item-body">
+            <p-slider [(ngModel)]="props.fontSize" (onChange)="setFontSize()" [step]="1" [min]="1" [max]="120"></p-slider> {{props.fontSize}}
+          </div>
+        </div>
+        <div class="custom-item" *ngIf="selected && textEditor">
+          <div class="custom-item-title">Line Height</div>
+          <div class="custom-item-body">
+              <p-slider [(ngModel)]="props.lineHeight" (onChange)="setLineHeight()" [step]="0.1" [min]="0" [max]="10"></p-slider> {{props.lineHeight}}
+          </div>
+        </div>
+        <div class="custom-item" *ngIf="selected && textEditor">
+          <div class="custom-item-title">Char Spacing</div>
+          <div class="custom-item-body">
+              <p-slider [(ngModel)]="props.charSpacing" (onChange)="setCharSpacing()" [step]="10" [min]="-200" [max]="800"></p-slider> {{props.charSpacing}}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<p-confirmDialog header="Clear canvas confirmation" icon="fa-question-circle" width="425"></p-confirmDialog>
+<p-growl [(value)]="messages" [life]="5000"></p-growl>

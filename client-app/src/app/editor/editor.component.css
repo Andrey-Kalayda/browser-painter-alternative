@@ -1,0 +1,52 @@
+#canvas {
+  border: 2px solid #cccccc;
+}
+
+:host >>> .canvas-container {
+  margin: 0 auto;
+}
+
+@media (max-width: 1199px) {
+  .canvas-wrapper {
+    padding-bottom: 15px;
+  }
+}
+
+.images-item {
+  width: 20%;
+  cursor: pointer;
+  -webkit-transition: .5s ease;
+  -webkit-transition: .5s ease;
+  padding: 3px;
+  max-width: 120px;
+}
+
+.images-item:hover {
+  opacity: 0.7;
+}
+
+.btn-figure, .btn-free-drawing {
+  width: 100px;
+}
+
+.no-padding {
+  padding: 0;
+}
+
+.panel {
+  margin-bottom: 10px;
+}
+
+.top-hr {
+  margin: 10px 0;
+}
+
+.custom-item-title, .custom-item-body {
+  padding: 0.5em 0;
+}
+.ui-button.active {
+  background-color: darkblue;
+}
+.ui-button.active:hover {
+  background-color: rgb(5, 5, 54);
+}
