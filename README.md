@@ -41,8 +41,8 @@ Open Integrated Terminal, go to the Client Side Application folder and put speci
   ```
 
 ## Run Server (Web.Api)
-Press `F5` to run server app
-Press `Ctrl + F5` to run server app in debug mode
+- Press `F5` to run server app
+- Press `Ctrl + F5` to run server app in debug mode
 
 ## Run Client Tests
 Open Integrated Terminal, go to the Client Side Application folder and put the command
