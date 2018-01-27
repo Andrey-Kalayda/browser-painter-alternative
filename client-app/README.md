@@ -21,7 +21,7 @@ Used Libraries and frameworks:
 
 ## Functionality
 
-###Canvas Home page
+### Canvas Home page
 
 Browser Painter Alternative provides the following functionality:
 
@@ -83,7 +83,8 @@ There're 2 panels on this page:
 The Api returns fonts list and server date to respective panel.
 If Web.Api Application is not launched, you'll see the red error message on the right top page corner.
 
-### Launch URLs
+## Launch URLs
 
-Client App launches on url: http://localhost:4200 by default
-Karma Test App launches on http://localhost:9876 by default
+Client App launches on url: `http://localhost:4200` by default
+<br/>
+Karma Test App launches on `http://localhost:9876` by default

@@ -1,4 +1,4 @@
-#Server Side Application
+# Server Side Application
 Server Application is written on C# Programming Language on ASP.NET Core Platform.
 ___
 ## Used soft
@@ -12,15 +12,15 @@ Used Libraries and Platforms:
 
 ## Functionality
 
-Accepts GET and POST requests with **Content-Type** header according to CORS restrictions.
+Accepts GET and POST requests with `Content-Type` header according to CORS restrictions.
 
 Has 2 GET methods:
 
 - GetFonts
-    Returns fonts dropdown list
+    <br/>Returns fonts dropdown list
 - GetServerDate
-    Returns server date
+    <br/>Returns server date
 
-### launch URLs
+## Launch URLs
 
-Server App launches on url: http://localhost:5000 by default
+Server App launches on url: `http://localhost:5000` by default
