@@ -1,5 +1,5 @@
 # Browser Painter Alternative app
-
+___
 Consists of:
 
 - Client Side Application based on Angular 4 framework
