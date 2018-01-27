@@ -13,7 +13,7 @@ Used Libraries and Platforms:
 
 ## Functionality
 
-Accepts GET and POST requests with `Content-Type` header according to CORS restrictions.
+Accepts all requests from only client app origin (`http://localhost:4200`) according to CORS restrictions in `Startup.cs`.
 
 Has 2 GET methods:
 
