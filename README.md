@@ -22,7 +22,7 @@ Once you download and install all the needed soft, you just need to download rep
 Then open that folder as root in **VS Code**.
 
 ## Restoring packages
-- Open Integrated Terminal in **VS Code** (View -> Integrated Terminal)
+- Open Integrated Terminal in **VS Code** (View -> Integrated Terminal) and move to `client-app` folder
 - Put the following command
   ```
   npm install
