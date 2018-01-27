@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using web_api.Hubs;
 
 namespace web_api
 {
@@ -24,6 +25,7 @@ namespace web_api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddCors();
+            services.AddSignalR();
             services.AddMvc();
         }
 
@@ -36,10 +38,13 @@ namespace web_api
             }
 
             app.UseCors(
-                options => options.WithOrigins("http://localhost:4200")
-                    .WithHeaders("Content-Type")
-                    .WithMethods("GET, POST")
+                options => options.AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .WithOrigins("http://localhost:4200")
             );
+            app.UseSignalR(routes => {
+                routes.MapHub<EditorHub>("hubs/editor");
+            });
             app.UseMvc();
         }
     }

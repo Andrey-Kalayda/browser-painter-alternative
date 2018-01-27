@@ -1,14 +1,15 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import {ColorPickerService} from 'angular4-color-picker';
-import { EditorSyncronizationService } from '../websocket/editor-syncronization.service';
 import { Subscription } from 'rxjs/Rx';
 import { ConfirmationService } from 'primeng/primeng';
 import { EditorApiService } from '../api/service/editor-api.service';
 import { DropDownStringItem } from '../api/model/dropdown-string-item.model';
+import { EditorHubService, HubMessage } from '../websocket/editor-hub.service';
+import { Message } from 'primeng/components/common/message';
+import { NotificationService } from '../core/notification.service';
+import { Subject } from 'rxjs/Subject';
 
 import 'fabric';
-import { Message } from 'primeng/components/common/message';
-import { Subject } from 'rxjs/Subject';
 
 declare const fabric: any;
 
@@ -25,9 +26,6 @@ export class EditorComponent implements OnInit, OnDestroy {
   fontList: Array<DropDownStringItem> = [];
   selectedFontFamilyItem: DropDownStringItem;
 
-  messages: Array<Message> = [];
-
-  private clientId: string;
   private canvas: any;
   private props: any = {
     canvasFill: '#ffffff',
@@ -59,7 +57,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   private selected: any;
   private textString: string;
 
-  private syncSubscription: Subscription;
+  private hubSubscription: Subscription;
 
   private updateDrawingMode: Subject<boolean> = new Subject<boolean>();
 
@@ -67,35 +65,51 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   constructor(private apiService: EditorApiService,
               private cpService: ColorPickerService,
-              private syncService: EditorSyncronizationService,
+              private hubService: EditorHubService,
+              private notificationService: NotificationService,
               private confirmService: ConfirmationService) {
   }
 
   ngOnInit() {
-    this.clientId = this.generateCliendId();
+    // Connect to signalR hub
+    this.hubService.connect();
+    // add handlers for canvas edit events
+    this.hubService.addReceiveHandler('addItem');
+    this.hubService.addReceiveHandler('updateItem');
+    this.hubService.addReceiveHandler('setActiveStyle');
+    this.hubService.addReceiveHandler('setActiveProp');
+    this.hubService.addReceiveHandler('removeItem');
+    this.hubService.addReceiveHandler('canvasFill');
+    
     this.apiService.getFonts().subscribe(fonts => {
         this.fontList = fonts;
         this.selectedFontFamilyItem = this.fontList.filter(x => x.key === 'helvetica')[0];
         this.props.fontFamily = this.selectedFontFamilyItem.key;
       },
-      error => this.messages.push(error));
+      error => this.notificationService.addError('Api Error', error));
     this.updateDrawingMode.subscribe(value => {
       this.canvas.isDrawingMode = value;
     });
     // subscribe to canvas update from other users
-    this.syncSubscription = this.syncService.onMessageStream().subscribe(msg => {
-      if (msg.key === 'addItem') {
-        this.extendJsonObj(JSON.parse(msg.value), (obj) => {
+    this.hubSubscription = this.hubService.onMessageReceivedStream().subscribe(message => {
+      if (message.key === 'onConnect') {
+        // notify about new user
+        this.notificationService.addInfo('New User', message.value);
+      } else if (message.key === 'onDisconnect') {
+        // notify about disconnected user
+        this.notificationService.addInfo('User Logout', message.value);
+      } else if (message.key === 'addItem') {
+        this.extendJsonObj(JSON.parse(message.value), (obj) => {
           this.canvas.add(obj);
           this.canvas.renderAll();
         });
-      } else if (msg.key === 'updateItem') {
-        let jsonObj = JSON.parse(msg.value);
+      } else if (message.key === 'updateItem') {
+        let jsonObj = JSON.parse(message.value);
         if (jsonObj.type !== 'group') {
           this.updateObjectOnCanvas(jsonObj);
         }
-      } else if (msg.key === 'setActiveStyle') {
-        let styleObj = JSON.parse(msg.value);
+      } else if (message.key === 'setActiveStyle') {
+        let styleObj = JSON.parse(message.value);
         let obj = this.canvas._objects.filter(x => x.id === styleObj.id);
         if (obj.length > 0 && (!this.selected || obj[0].id !== this.selected.id)) {
           let object = obj[0];
@@ -109,16 +123,16 @@ export class EditorComponent implements OnInit, OnDestroy {
           }
           this.canvas.renderAll();
         }
-      } else if (msg.key === 'setActiveProp') {
-        let propObj = JSON.parse(msg.value);
+      } else if (message.key === 'setActiveProp') {
+        let propObj = JSON.parse(message.value);
         let obj = this.canvas._objects.filter(x => x.id === propObj.id);
         if (obj.length > 0 && (!this.selected || obj[0].id !== this.selected.id)) {
           let object = obj[0];
           object.set(propObj.name, propObj.value);
           this.canvas.renderAll();
         }
-      } else if (msg.key === 'removeItem') {
-        let jsonObj =  JSON.parse(msg.value);
+      } else if (message.key === 'removeItem') {
+        let jsonObj =  JSON.parse(message.value);
         if (jsonObj.ids) {
           jsonObj.ids.forEach(id => {
             this.removeObjectOnCanvas(id);
@@ -126,13 +140,12 @@ export class EditorComponent implements OnInit, OnDestroy {
         } else {
           this.removeObjectOnCanvas(jsonObj.id);
         }
-      } else if (msg.key === 'canvasFill') {
-        this.props.canvasFill = JSON.parse(msg.value);
+      } else if (message.key === 'canvasFill') {
+        this.props.canvasFill = JSON.parse(message.value);
         this.canvas.backgroundColor = this.props.canvasFill;
         this.canvas.renderAll();
       }
-    },
-    errors => console.error(JSON.stringify(errors)));
+    });
 
     //setup front side canvas
     this.canvas = new fabric.Canvas('canvas', {
@@ -141,9 +154,10 @@ export class EditorComponent implements OnInit, OnDestroy {
       selectionBorderColor: 'blue'
     });
 
+    // bind handlers to canvas events
     this.canvas.on({
       'object:modified': (e: Event) => {
-        this.syncService.sendMessage({
+        this.hubService.sendMessage({
           key: 'updateItem',
           value: JSON.stringify((<any>e.target).toJSON(this.objPropsToInclude))
         });
@@ -201,7 +215,7 @@ export class EditorComponent implements OnInit, OnDestroy {
             this.canvas.renderAll();
             let object = this.canvas._objects[this.canvas._objects.length - 1];
             object.id = this.randomId();
-            this.syncService.sendMessage({
+            this.hubService.sendMessage({
               key: 'addItem',
               value: JSON.stringify(object.toJSON(this.objPropsToInclude))
             });
@@ -214,8 +228,9 @@ export class EditorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.syncSubscription.unsubscribe();
+    this.hubSubscription.unsubscribe();
     this.updateDrawingMode.unsubscribe();
+    //this.hubService.disconnect();
   }
 
   /*------------------------Block elements------------------------*/
@@ -241,7 +256,7 @@ export class EditorComponent implements OnInit, OnDestroy {
       this.canvas.add(text);
       this.selectItemAfterAdded(text);
       this.textString = '';
-      this.syncService.sendMessage({
+      this.hubService.sendMessage({
         key: 'addItem',
         value: JSON.stringify(text.toJSON(this.objPropsToInclude))
       });
@@ -268,7 +283,7 @@ export class EditorComponent implements OnInit, OnDestroy {
       image.id = this.randomId();
       this.canvas.add(image);
       this.selectItemAfterAdded(image);
-      this.syncService.sendMessage({
+      this.hubService.sendMessage({
         key: 'addItem',
         value: JSON.stringify(image.toJSON(this.objPropsToInclude))
       });
@@ -305,7 +320,7 @@ export class EditorComponent implements OnInit, OnDestroy {
     add.id = this.randomId();
     this.canvas.add(add);
     this.selectItemAfterAdded(add);
-    this.syncService.sendMessage({
+    this.hubService.sendMessage({
       key: 'addItem',
       value: JSON.stringify(add.toJSON(this.objPropsToInclude))
     });
@@ -340,7 +355,7 @@ export class EditorComponent implements OnInit, OnDestroy {
   setCanvasFill() {
     this.canvas.backgroundColor = this.props.canvasFill;
     this.canvas.renderAll();
-    this.syncService.sendMessage({
+    this.hubService.sendMessage({
       key: 'canvasFill',
       value: JSON.stringify(this.props.canvasFill)
     });
@@ -377,7 +392,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
     this.canvas.renderAll();
 
-    this.syncService.sendMessage({
+    this.hubService.sendMessage({
       key: 'setActiveStyle',
       value: JSON.stringify({
         id: object.id,
@@ -400,7 +415,7 @@ export class EditorComponent implements OnInit, OnDestroy {
     if (!object) return;
     object.set(name, value);
     this.canvas.renderAll();
-    this.syncService.sendMessage({
+    this.hubService.sendMessage({
       key: 'setActiveProp',
       value: JSON.stringify({
         id: object.id,
@@ -436,7 +451,7 @@ export class EditorComponent implements OnInit, OnDestroy {
         clone.set({ left: 10, top: 10 });
         this.canvas.add(clone);
         this.selectItemAfterAdded(clone);
-        this.syncService.sendMessage({
+        this.hubService.sendMessage({
           key: 'addItem',
           value: JSON.stringify(clone.toJSON(this.objPropsToInclude))
         });
@@ -485,7 +500,7 @@ export class EditorComponent implements OnInit, OnDestroy {
     if (object != null) {
       object.set('stroke', this.props.strokeColor);
       this.canvas.renderAll();
-      this.syncService.sendMessage({
+      this.hubService.sendMessage({
         key: 'setActiveProp',
         value: JSON.stringify({
           id: object.id,
@@ -587,7 +602,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
     if (activeObject) {
       this.canvas.remove(activeObject);
-      this.syncService.sendMessage({
+      this.hubService.sendMessage({
         key: 'removeItem',
         value: JSON.stringify({id: activeObject.id})
       });
@@ -599,7 +614,7 @@ export class EditorComponent implements OnInit, OnDestroy {
       objectsInGroup.forEach(function(object) {
         self.canvas.remove(object);
       });
-      this.syncService.sendMessage({
+      this.hubService.sendMessage({
         key: 'removeItem',
         value: JSON.stringify({ids: activeGroup._objects.map(x => x.id)})
       });
@@ -619,11 +634,7 @@ export class EditorComponent implements OnInit, OnDestroy {
 
   rasterize() {
     if (!fabric.Canvas.supports('toDataURL')) {
-      this.messages.push({
-        severity: 'error',
-        summary: 'Canvas serialization error',
-        detail: 'This browser doesn\'t provide means to serialize canvas to an image'
-      });
+      this.notificationService.addError('Canvas serialization error', 'This browser doesn\'t provide means to serialize canvas to an image');
     }
     else {
       this.openDataUriWindow(this.canvas.toDataURL('png'));
@@ -730,20 +741,5 @@ export class EditorComponent implements OnInit, OnDestroy {
       this.canvas._objects.splice(index, 1);
       this.canvas.renderAll();
     }
-  }
-
-  // returns client identifier to filter receivers on websockets
-  // stolen here: https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
-  private generateCliendId(): string {
-    var s = [];
-    var hexDigits = '0123456789abcdef';
-    for (var i = 0; i < 36; i++) {
-        s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
-    }
-    s[14] = '4';  // bits 12-15 of the time_hi_and_version field to 0010
-    s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);  // bits 6-7 of the clock_seq_hi_and_reserved to 01
-    s[8] = s[13] = s[18] = s[23] = '-';
-
-    return s.join('');
   }
 }

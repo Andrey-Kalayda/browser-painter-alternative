@@ -1,6 +1,7 @@
 import { NgModule, Optional, SkipSelf } from '@angular/core';
 import { SharedModule } from './../shared/shared.module';
 import { throwIfAlreadyLoaded } from './module-import-guard';
+import { NotificationService } from './notification.service';
 
 @NgModule({
   imports: [
@@ -8,6 +9,9 @@ import { throwIfAlreadyLoaded } from './module-import-guard';
   declarations: [
   ],
   exports: [
+  ],
+  providers: [
+    NotificationService
   ]
 })
 export class CoreModule {

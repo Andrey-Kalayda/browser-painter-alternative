@@ -2,6 +2,7 @@ import {TestBed, async} from '@angular/core/testing';
 import { EditorApiComponent } from './editor-api.component';
 import { SharedModule } from '../../shared/shared.module';
 import { EditorApiService } from '../service/editor-api.service';
+import { NotificationService } from '../../core/notification.service';
 
 describe(EditorApiComponent.name, () => {
     beforeEach(async(() => {
@@ -13,7 +14,8 @@ describe(EditorApiComponent.name, () => {
                 EditorApiComponent
             ],
             providers: [
-                {provide: EditorApiService, useValue: null}
+                {provide: EditorApiService, useValue: null},
+                {provide: NotificationService, useValue: null}
             ]
         }).compileComponents();
     }));

@@ -51,11 +51,7 @@ export class BaseApiService {
 
         return result.catch((err, source) => {
             let message: string = `Api Error occured.${ err && err.statusText ? '\nDetails: ' + err.statusText : '' }`;
-            return Observable.throw({
-                severity: 'error',
-                summary: 'Api error',
-                detail: message
-            });
+            return Observable.throw(message);
         });
     }
 }

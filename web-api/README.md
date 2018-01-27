@@ -9,6 +9,7 @@ Used Libraries and Platforms:
 | ------ | ------ |
 | ASP.NET Core | 2.0.5 |
 | Web.API | 2.0 |
+| SignalR | 1.0.0-alpha1-final |
 
 ## Functionality
 

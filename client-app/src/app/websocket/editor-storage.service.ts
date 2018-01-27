@@ -9,7 +9,7 @@ export class Message {
 
 
 @Injectable()
-export class EditorSyncronizationService {
+export class EditorStorageService {
   private onMessage: Subject<Message> = new Subject<Message>();
 
   public onMessageStream(): Subject<Message> {

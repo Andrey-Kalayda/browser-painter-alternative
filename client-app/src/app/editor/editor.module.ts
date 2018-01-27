@@ -1,8 +1,8 @@
 import { NgModule } from '@angular/core';
 import { EditorComponent } from './editor.component';
 import { SharedModule } from '../shared/shared.module';
-import { EditorSyncronizationService } from '../websocket/editor-syncronization.service';
 import { ConfirmationService } from 'primeng/primeng';
+import { EditorHubService } from '../websocket/editor-hub.service';
 
 @NgModule({
   imports: [
@@ -12,7 +12,7 @@ import { ConfirmationService } from 'primeng/primeng';
     EditorComponent
   ],
   providers: [
-    EditorSyncronizationService,
+    EditorHubService,
     ConfirmationService
   ]
 })
