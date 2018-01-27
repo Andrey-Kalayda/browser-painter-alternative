@@ -3,6 +3,21 @@
 </div>
 <hr class="top-hr"/>
 <div class="row">
-    <div class="col-lg-12">
+    <div class="col-lg-6">
+        <div class="panel panel-default">
+          <div class="panel-heading">Fonts</div>
+          <div class="panel-body">
+            <p-dropdown [options]="fontList" [autoWidth]="false" optionLabel="value" styleClass="font-dropdown"></p-dropdown>
+          </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="panel panel-default">
+         <div class="panel-heading">Server Date Time</div>
+         <div class="panel-body">
+                {{serverDate | date:'dd.MM.yyyy hh:mm:ss'}}
+         </div>
+        </div>
     </div>
 </div>
+<p-growl [(value)]="messages" [life]="5000"></p-growl>

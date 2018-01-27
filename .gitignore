@@ -12,6 +12,7 @@
 
 *.dll
 *.pdb
+*-lock.json
 
 # IDEs and editors
 /.idea

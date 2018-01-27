@@ -33,5 +33,12 @@ namespace web_api.Controllers
                 new DropdownStringItem() { Key = "Gloria Hallelujah", Value = "Gloria Hallelujah"}
             };
         }
+
+        // Get api/editor/fonts
+        [HttpGet("serverdate")]
+        public DateTime GetServerDate()
+        {
+            return DateTime.UtcNow;
+        }
     }
 }

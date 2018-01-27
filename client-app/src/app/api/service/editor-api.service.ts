@@ -13,4 +13,8 @@ export class EditorApiService extends BaseApiService {
     getFonts(): Observable<Array<DropDownStringItem>> {
         return this.get<Array<DropDownStringItem>>('fonts');
     }
+
+    getServerDate(): Observable<Date> {
+        return this.get<Date>('serverdate');
+    }
 }
